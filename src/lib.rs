@@ -33,7 +33,7 @@ impl fmt::Display for Side {
 
 pub type Face = [Side; 8];
 
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Hash)]
 pub struct Cube3by3 {
     /// UDLFRB order, clockwise stickers from top left
     faces: [Face; 6],
@@ -181,16 +181,42 @@ impl Cube3by3 {
     }
 
     pub fn solve(&self, move_count: u8) -> Option<Vec<Move>> {
-        Cube3by3::solve_(
-            *self,
-            Vec::with_capacity(move_count as usize / 2),
-            SOLVED,
-            Vec::with_capacity(move_count as usize / 2),
-            move_count,
-        )
+        // Cube3by3::solve_mitm(
+        //     *self,
+        //     Vec::with_capacity(move_count as usize / 2),
+        //     SOLVED,
+        //     Vec::with_capacity(move_count as usize / 2),
+        //     move_count,
+        // )
+        Cube3by3::solve_naive(*self, &[], move_count)
     }
 
-    fn solve_(
+    fn solve_naive(state: Self, moves: &[Move], move_count: u8) -> Option<Vec<Move>> {
+        if move_count == 0 {
+            return None;
+        }
+        let mut start_move_candidates = Vec::with_capacity(18);
+        match moves.last() {
+            None => start_move_candidates.extend_from_slice(&Move::values()),
+            Some(last) => start_move_candidates.extend_from_slice(&last.next_move_set()),
+        };
+        for next_move in start_move_candidates {
+            let mut start_state = state;
+            start_state.apply_move(&next_move);
+            let mut moves = moves.to_vec();
+            moves.push(next_move);
+            if start_state.eq(&SOLVED) {
+                return Some(moves);
+            }
+            let res = Cube3by3::solve_naive(start_state, &moves, move_count - 1);
+            if res.is_some() {
+                return res;
+            }
+        }
+        None
+    }
+
+    fn solve_mitm(
         start_state: Self,
         start_moves: Vec<Move>,
         end_state: Self,
@@ -230,8 +256,13 @@ impl Cube3by3 {
                 start_moves.push(*start_move);
                 let mut end_moves = end_moves.clone();
                 end_moves.push(*end_move);
-                let res =
-                    Cube3by3::solve_(start_state, start_moves, end_state, end_moves, move_count);
+                let res = Cube3by3::solve_mitm(
+                    start_state,
+                    start_moves,
+                    end_state,
+                    end_moves,
+                    move_count,
+                );
                 if res.is_some() {
                     return res;
                 }
@@ -419,7 +450,8 @@ mod tests {
         println!("{}", cube);
         let solution = cube.solve(6);
         println!("{:?}", solution);
-        assert!(solution.is_some_and(|s| !s.is_empty()));
+        assert!(solution.is_some());
+        cube.apply(&solution.unwrap());
         assert!(cube.is_solved());
     }
 }

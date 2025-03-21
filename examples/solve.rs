@@ -7,8 +7,9 @@ fn main() {
         D2, R2, U2, L2, Dp, R2, Dp, //B2, D2, F2, Dp, Fp, Rp, Fp, Dp, R, U2, Fp, Lp, Rp,
     ]);
     println!("{}", cube);
-    let solution = cube.solve(6);
+    let solution = cube.solve(7);
     println!("{:?}", solution);
-    assert!(solution.is_some_and(|s| !s.is_empty()));
+    assert!(solution.is_some());
+    cube.apply(&solution.unwrap());
     assert!(cube.is_solved());
 }
