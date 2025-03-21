@@ -1,6 +1,7 @@
 use core::fmt;
+use std::collections::HashMap;
 
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Hash)]
 pub enum Side {
     R,
     L,
@@ -167,7 +168,15 @@ impl Cube3by3 {
         }
     }
     pub fn check_parity(&self) -> bool {
-        true
+        let dict: HashMap<&Side, i32> =
+            self.faces
+                .iter()
+                .flatten()
+                .fold(HashMap::new(), |mut map, color| {
+                    *map.entry(color).or_insert(0) += 1;
+                    map
+                });
+        dict.len() == 6 && dict.values().all(|v| *v == 8)
     }
 }
 
@@ -261,6 +270,7 @@ mod tests {
     #[test]
     fn print_solved() {
         let cube = Cube3by3::new();
+        println!("{}", cube);
         assert_eq!(
             cube.to_string(),
             align(
@@ -277,7 +287,8 @@ mod tests {
         🟨🟨🟨
         🟨🟨🟨"
             )
-        )
+        );
+        assert!(cube.check_parity());
     }
 
     #[test]
@@ -303,6 +314,7 @@ mod tests {
         🟦🟨⬜
         🟥⬜🟩"
             )
-        )
+        );
+        assert!(cube.check_parity());
     }
 }
